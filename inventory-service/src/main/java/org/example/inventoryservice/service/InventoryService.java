@@ -41,13 +41,48 @@ public class InventoryService {
     public Component saveComponent(Component component) {
         return componentRepository.save(component);
     }
-
-    public BoardSpecification saveSpecification(Long componentId, BoardSpecification specification) {
+    public BoardSpecification saveSpecification(Long componentId, BoardSpecification incoming) {
         Component component = componentRepository.findById(componentId)
                 .orElseThrow(() -> new NoSuchElementException("Komponenta ne postoji."));
-        specification.setComponent(component);
-        return specificationRepository.save(specification);
+
+        return specificationRepository.findById(componentId)
+                .map(existing -> copySpecificationFields(incoming, existing))
+                .orElseGet(() -> {
+                    // Nova specifikacija: NE postavljati componentId ručno - @MapsId ga
+                    // izvodi iz ove asocijacije pri persist()-u (videti napomenu u modelu).
+                    incoming.setComponent(component);
+                    return specificationRepository.save(incoming);
+                });
     }
+
+    /** Prepisuje sadržaj specifikacije na već postojeći (managed) entitet i čuva ga - pravi UPDATE. */
+    private BoardSpecification copySpecificationFields(BoardSpecification from, BoardSpecification to) {
+        to.setCpuArchitecture(from.getCpuArchitecture());
+        to.setClockSpeedMhz(from.getClockSpeedMhz());
+        to.setFlashMemoryKb(from.getFlashMemoryKb());
+        to.setSramKb(from.getSramKb());
+        to.setOperatingVoltage(from.getOperatingVoltage());
+        to.setDigitalPinsCount(from.getDigitalPinsCount());
+        to.setAnalogPinsCount(from.getAnalogPinsCount());
+        to.setTimerCount(from.getTimerCount());
+        to.setPwmChannelsCount(from.getPwmChannelsCount());
+        to.setSpiCount(from.getSpiCount());
+        to.setI2cCount(from.getI2cCount());
+        to.setUartCount(from.getUartCount());
+        to.setHasWifi(from.getHasWifi());
+        to.setHasBluetooth(from.getHasBluetooth());
+        return specificationRepository.save(to);
+    }
+
+    public boolean specificationExists(Long componentId) {
+        return specificationRepository.existsById(componentId);
+    }
+//    public BoardSpecification saveSpecification(Long componentId, BoardSpecification specification) {
+//        Component component = componentRepository.findById(componentId)
+//                .orElseThrow(() -> new NoSuchElementException("Komponenta ne postoji."));
+//        specification.setComponent(component);
+//        return specificationRepository.save(specification);
+//    }
 
     public BoardSpecification getSpecification(Long componentId) {
         return specificationRepository.findById(componentId)

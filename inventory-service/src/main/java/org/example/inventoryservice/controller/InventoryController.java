@@ -64,8 +64,8 @@ public class InventoryController {
         return inventoryService.updateStatus(id, request.getOperationalStatus());
     }
 
-    @GetMapping("/items/available")
-    public List<InventoryItem> available(@RequestParam Long componentId) {
+    @GetMapping("/items/available/{componentId}")
+    public List<InventoryItem> available(@PathVariable Long componentId) {
         return inventoryService.findReadyForUse(componentId);
     }
 
