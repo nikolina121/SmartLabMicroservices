@@ -16,8 +16,8 @@ public interface InventoryProxy {
     @GetMapping("/inventory/items/{id}")
     InventoryItemDto getItem(@PathVariable("id") Long id);
 
-    @GetMapping("/inventory/items/available")
-    List<InventoryItemDto> getReadyForUse(@RequestParam("componentId") Long componentId);
+    @GetMapping("/inventory/items/available/{componentId}")
+    List<InventoryItemDto> getReadyForUse(@PathVariable("componentId") Long componentId);
 
     @PatchMapping("/inventory/items/{id}/status")
     InventoryItemDto updateStatus(@PathVariable("id") Long id, @RequestBody StatusRequestDto request);

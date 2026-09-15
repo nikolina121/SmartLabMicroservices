@@ -60,6 +60,7 @@ public class RentalReservationService {
         }
 
         ReservationRequest request = new ReservationRequest();
+        request.setCreatedAt(LocalDateTime.now());
         request.setMemberId(member.getId());
         request.setRequestedComponentId(dto.getComponentId());
         request.setRequestedStart(dto.getStart());
