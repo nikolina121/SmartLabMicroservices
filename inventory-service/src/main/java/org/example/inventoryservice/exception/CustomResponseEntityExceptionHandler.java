@@ -1,0 +1,62 @@
+package org.example.inventoryservice.exception;
+
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.HttpStatusCode;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.bind.annotation.ControllerAdvice;
+import org.springframework.web.bind.annotation.ExceptionHandler;
+import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExceptionHandler;
+
+import java.time.LocalDate;
+import java.util.NoSuchElementException;
+import java.util.stream.Collectors;
+
+@ControllerAdvice
+public class CustomResponseEntityExceptionHandler extends ResponseEntityExceptionHandler {
+
+    @ExceptionHandler(BusinessException.class)
+    public ResponseEntity<ErrorEntity> handleBusiness(BusinessException ex) {
+        return new ResponseEntity<>(new ErrorEntity(ex.getMessage(), LocalDate.now()), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(NoSuchElementException.class)
+    public ResponseEntity<ErrorEntity> handleMissing(NoSuchElementException ex) {
+        return new ResponseEntity<>(new ErrorEntity(ex.getMessage(), LocalDate.now()), HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ErrorEntity> handleDataIntegrity(DataIntegrityViolationException ex) {
+        String rootMessage = ex.getMostSpecificCause().getMessage();
+        return new ResponseEntity<>(
+                new ErrorEntity("Podaci nisu prošli proveru u bazi: " + rootMessage, LocalDate.now()),
+                HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorEntity> handleIllegalArgument(IllegalArgumentException ex) {
+        return new ResponseEntity<>(
+                new ErrorEntity("Neispravan zahtev: " + ex.getMessage(), LocalDate.now()),
+                HttpStatus.BAD_REQUEST);
+    }
+
+    @Override
+    protected ResponseEntity<Object> handleMethodArgumentNotValid(
+            MethodArgumentNotValidException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+        String message = ex.getBindingResult().getFieldErrors().stream()
+                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+                .collect(Collectors.joining("; "));
+        return new ResponseEntity<>(new ErrorEntity(message, LocalDate.now()), HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(Exception.class)
+    public ResponseEntity<ErrorEntity> handleUnexpected(Exception ex) {
+        return new ResponseEntity<>(
+                new ErrorEntity("Neočekivana greška na serveru.", LocalDate.now()),
+                HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+}
+
