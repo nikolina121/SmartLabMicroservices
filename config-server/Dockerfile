@@ -7,7 +7,7 @@ RUN mvn -q -B -DskipTests clean package
 
 # ---- Runtime stage ----
 FROM eclipse-temurin:21-jre-alpine
-RUN apk add --no-cache git
+RUN apk add --no-cache git curl
 WORKDIR /app
 COPY --from=build /app/target/*.jar app.jar
 
@@ -18,6 +18,7 @@ RUN git config --global user.email "nikolina.l97@gmail.com" \
  && cd /config-repo \
  && git init -q \
  && git add . \
- && git commit -q -m "initial config"
+ && git commit -q -m "initial config" \
+ && git branch -m main
 
 ENTRYPOINT ["java", "-jar", "/app/app.jar"]

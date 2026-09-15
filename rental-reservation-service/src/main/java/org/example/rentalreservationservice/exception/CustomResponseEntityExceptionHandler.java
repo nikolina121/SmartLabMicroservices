@@ -23,11 +23,6 @@ public class CustomResponseEntityExceptionHandler extends ResponseEntityExceptio
         return new ResponseEntity<>(new ErrorEntity(ex.getMessage(), LocalDate.now()), HttpStatus.NOT_FOUND);
     }
 
-    /**
-     * Mreža za slučajeve koje nismo ručno validirali pre upisa (npr. neka nova CHECK
-     * constraint dodata direktno u bazi). Bez ovoga korisnik dobija goli 500 sa
-     * SQL stack trace-om umesto razumljive 400 poruke.
-     */
     @ExceptionHandler(DataIntegrityViolationException.class)
     public ResponseEntity<ErrorEntity> handleDataIntegrity(DataIntegrityViolationException ex) {
         String rootMessage = ex.getMostSpecificCause().getMessage();

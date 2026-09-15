@@ -8,7 +8,5 @@ import lombok.Setter;
 public class ApproveRequestDto {
 
     private Long approvedByUserId;
-
-    /** Opciono: inženjer ručno dodeljuje konkretan (alternativni) uređaj umesto automatskog izbora. */
     private Long inventoryItemId;
 }
