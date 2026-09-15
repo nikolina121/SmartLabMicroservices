@@ -1,0 +1,180 @@
+services:
+
+  # ---------- INFRASTRUKTURA ----------
+  eureka-server:
+    image: lab/eureka-server:0.1
+    build:
+      context: ./eureka-server
+    mem_limit: 700m
+    ports:
+      - "8761:8761"
+    networks:
+      - lab-network
+
+  config-server:
+    image: lab/config-server:0.1
+    build:
+      context: .
+      dockerfile: config-server/Dockerfile
+    mem_limit: 700m
+    ports:
+      - "8888:8888"
+    depends_on:
+      - eureka-server
+    environment:
+      - eureka.client.service-url.defaultZone=http://eureka-server:8761/eureka
+      - spring.profiles.active=git
+      - spring.cloud.config.server.git.uri=file:/config-repo
+    networks:
+      - lab-network
+
+  # ---------- BAZE PODATAKA ----------
+  authentication-db:
+    image: mysql:8.0
+    mem_limit: 500m
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_DATABASE=authentication_db
+    ports:
+      - "3307:3306"
+    volumes:
+      - authentication-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - lab-network
+
+  inventory-db:
+    image: mysql:8.0
+    mem_limit: 500m
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_DATABASE=lab_inventory_db
+    ports:
+      - "3308:3306"
+    volumes:
+      - inventory-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - lab-network
+
+  rental-db:
+    image: mysql:8.0
+    mem_limit: 500m
+    environment:
+      - MYSQL_ALLOW_EMPTY_PASSWORD=yes
+      - MYSQL_DATABASE=lab_rental_db
+    ports:
+      - "3309:3306"
+    volumes:
+      - rental-db-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    networks:
+      - lab-network
+
+  # ---------- MIKROSERVISI ----------
+  authentication-service:
+    image: lab/authentication-service:0.1
+    build:
+      context: ./authentication-service
+    mem_limit: 700m
+    ports:
+      - "8081:8081"
+    depends_on:
+      eureka-server:
+        condition: service_started
+      config-server:
+        condition: service_started
+      authentication-db:
+        condition: service_healthy
+    environment:
+      - eureka.client.service-url.defaultZone=http://eureka-server:8761/eureka
+      - spring.config.import=optional:configserver:http://config-server:8888
+      - spring.datasource.url=jdbc:mysql://authentication-db:3306/authentication_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - spring.datasource.username=root
+      - spring.datasource.password=
+    networks:
+      - lab-network
+
+  inventory-service:
+    image: lab/inventory-service:0.1
+    build:
+      context: ./inventory-service
+    mem_limit: 700m
+    ports:
+      - "8082:8082"
+    depends_on:
+      eureka-server:
+        condition: service_started
+      config-server:
+        condition: service_started
+      inventory-db:
+        condition: service_healthy
+    environment:
+      - eureka.client.service-url.defaultZone=http://eureka-server:8761/eureka
+      - spring.config.import=optional:configserver:http://config-server:8888
+      - spring.datasource.url=jdbc:mysql://inventory-db:3306/lab_inventory_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - spring.datasource.username=root
+      - spring.datasource.password=
+    networks:
+      - lab-network
+
+  rental-reservation-service:
+    image: lab/rental-reservation-service:0.1
+    build:
+      context: ./rental-reservation-service
+    mem_limit: 700m
+    ports:
+      - "8083:8083"
+    depends_on:
+      eureka-server:
+        condition: service_started
+      config-server:
+        condition: service_started
+      rental-db:
+        condition: service_healthy
+    environment:
+      - eureka.client.service-url.defaultZone=http://eureka-server:8761/eureka
+      - spring.config.import=optional:configserver:http://config-server:8888
+      - spring.datasource.url=jdbc:mysql://rental-db:3306/lab_rental_db?useSSL=false&allowPublicKeyRetrieval=true&serverTimezone=UTC
+      - spring.datasource.username=root
+      - spring.datasource.password=
+    networks:
+      - lab-network
+
+  api-gateway:
+    image: lab/api-gateway:0.1
+    build:
+      context: ./api-gateway
+    mem_limit: 700m
+    ports:
+      - "8765:8765"
+    depends_on:
+      - eureka-server
+      - authentication-service
+      - inventory-service
+      - rental-reservation-service
+    environment:
+      - eureka.client.service-url.defaultZone=http://eureka-server:8761/eureka
+      - spring.config.import=optional:configserver:http://config-server:8888
+    networks:
+      - lab-network
+
+networks:
+  lab-network:
+
+volumes:
+  authentication-db-data:
+  inventory-db-data:
+  rental-db-data:
