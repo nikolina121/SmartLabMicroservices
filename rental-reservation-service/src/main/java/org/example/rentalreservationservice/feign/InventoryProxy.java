@@ -10,7 +10,8 @@ import org.springframework.web.bind.annotation.RequestParam;
 
 import java.util.List;
 
-@FeignClient(name = "inventory-service", fallback = InventoryProxyFallback.class)
+//@FeignClient(name = "inventory-service", fallback = InventoryProxyFallback.class)
+@FeignClient(name = "inventory-service", fallbackFactory = InventoryProxyFallbackFactory.class)
 public interface InventoryProxy {
 
     @GetMapping("/inventory/items/{id}")

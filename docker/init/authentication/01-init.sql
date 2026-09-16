@@ -30,3 +30,12 @@ INSERT INTO roles (name, description) VALUES
  ('STUDENT', 'Student laboratorije'),
  ('ENGINEER', 'Laboratorijski inzenjer'),
  ('ADMIN', 'Administrator sistema');
+
+INSERT INTO users (username, password_hash, email, enabled)
+VALUES ('admin', '$2b$12$Dciul.d5HIspDxRX5cSoYe/A.3nSKz0QUQjIQRCGvn6xZ.ikWupQK', 'admin@lab.com', TRUE);
+
+INSERT INTO user_roles (user_id, role_id)
+VALUES (
+           (SELECT id FROM users WHERE username = 'admin'),
+           (SELECT id FROM roles WHERE name = 'ADMIN')
+       );
